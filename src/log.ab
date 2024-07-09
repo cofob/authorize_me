@@ -1,0 +1,104 @@
+import { upper, trim, len } from "std"
+
+let log_level = ""
+let levels = ["DEBUG", "INFO", "WARN", "ERROR"]
+let log_file = "/dev/stderr"
+
+let max_module_name_len = 4
+
+let md = ["log"]
+
+fun echo_log(level: Text, module_name: Text, text: Text): Null {
+  let date = $date$ failed {
+    echo "Failed to get date"
+  }
+  let level_name = level
+  loop {
+    if len(level_name) < 5 {
+      level_name += " "
+    } else {
+      break
+    }
+  }
+  let module_name_extended = module_name
+  if len(module_name_extended) > max_module_name_len {
+    max_module_name_len = len(module_name_extended)
+  }
+  loop {
+    if len(module_name_extended) < max_module_name_len {
+      module_name_extended += " "
+    } else {
+      break
+    }
+  }
+  unsafe $echo "[{level_name}] [{module_name_extended}] [{date}] {text}" > {log_file}$
+}
+
+pub fun log(level: Text, module_name: Text, text: Text): Null {
+  if level == log_level {
+    echo_log(level, module_name, text)
+  } else {
+    let print = false
+    let log_level_reached = false
+    loop index, array_level in levels {
+      if array_level == log_level {
+        log_level_reached = true
+      }
+      if array_level == level {
+        if log_level_reached == true {
+          print = true
+        }
+        break
+      }
+    }
+    if print == true:
+      echo_log(level, module_name, text)
+  }
+}
+
+pub fun l(module_data: [Text], level: Text, text: Text): Null {
+  log(level, module_data[0], text)
+}
+
+pub fun lf(module_data: [Text], s: Num, level: Text, text: Text): Null {
+  log(level, module_data[0], text)
+  unsafe fail s
+}
+
+pub fun init_log_module_data(module_name: Text): [Text] {
+  return [module_name]
+}
+
+pub fun set_log_file(log_file_path: Text): Null {
+  log_file = log_file_path
+}
+
+pub fun init_log(): Null {
+  if log_level == "" {
+    log_level = $printenv LOG_LEVEL$ failed {
+      log_level = "INFO"
+    }
+    if log_level == "" {
+      log_level = "INFO"
+    }
+  }
+  log_level = upper(trim(log_level))
+
+  let log_file_path = unsafe $printenv LOG_FILE$
+  if log_file_path != "" {
+    log_file = log_file_path
+  }
+
+  let matched = false
+  loop index, array_level in levels {
+    if log_level == array_level {
+      matched = true
+    }
+  }
+  if matched != true {
+    log_level = "INFO"
+    l(md, "WARN", "Unknown log level '{log_level}', using INFO")
+  }
+
+  l(md, "DEBUG", "LOG_LEVEL: {log_level}, LOG_FILE: {log_file}")
+}

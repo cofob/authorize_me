@@ -1,0 +1,57 @@
+import { len, file_exist, file_read, file_write } from "std"
+
+import { fail_if_commands_not_found, get_required_env, get_default_env, load_env_file } from "./utils.ab"
+import { request_get } from "./requests.ab"
+import { init_log, init_log_module_data, l, lf } from "./log.ab"
+
+let md = init_log_module_data("main")
+
+fun print_user_keys(json: Text, username: Text): Null {
+  unsafe $echo {json} | jq -r \".{username}.[]\" | xargs -I \{} echo \{}$
+}
+
+main(args) {
+  if file_exist(".env"):
+    load_env_file()
+  init_log()
+
+  if len(args) != 1 {
+    l(md, "ERROR", "Invalid argument count passed. Expected 1 argument - username.")
+    fail 1
+  }
+
+  fail_if_commands_not_found(["curl", "jq", "bc", "sed", "date"])?
+
+  let server_url = get_required_env("SERVER_URL")?
+  let users_path = get_default_env("USERS_PATH", "/var/authorize_me/users.json")
+
+  let is_local = false
+  let users_json = request_get(server_url) failed {
+    let users_json = ""
+    l(md, "INFO", "Request failed, falling back to local cache")
+  }
+  if users_json == "" {
+    if file_exist(users_path) {
+      users_json = file_read(users_path) failed {
+        unsafe lf(md, status, "ERROR", "Failed to read USERS_PATH with status {status}")
+        fail status
+      }
+      is_local = true
+    } else {
+      unsafe lf(md, status, "ERROR", "USERS_PATH doesn't exist and server is not available, exiting")
+      fail 1
+    }
+  }
+
+  print_user_keys(users_json, args[0])
+
+  if is_local == false {
+    l(md, "INFO", "Saved USERS_PATH")
+    file_write(users_path, users_json) failed {
+      unsafe lf(md, status, "ERROR", "Failed to save USERS_PATH with status {status}")
+      fail status
+    }
+  } else {
+    l(md, "INFO", "Not writing USERS_PATH because server is not available")
+  }
+}

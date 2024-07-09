@@ -1,0 +1,40 @@
+import { l, lf, init_log_module_data } from "./log.ab"
+
+let md = init_log_module_data("utils")
+
+pub fun load_env_file(): Null {
+  unsafe $export "\$(xargs < .env)" > /dev/null$
+}
+
+pub fun fail_if_command_not_found(bin_name: Text): Null {
+  unsafe silent $command -v {bin_name}$
+  if status != 0 {
+    l(md, "ERROR", "Required package {bin_name} not found, cannot continue. Please install it before running again.")
+    fail status
+  }
+}
+
+pub fun fail_if_commands_not_found(bin_names: [Text]): Null {
+  loop index, name in bin_names {
+    fail_if_command_not_found(name)?
+  }
+}
+
+pub fun get_required_env(env_name: Text): Text {
+  let val = $printenv {env_name}$ failed {
+    unsafe lf(md, status, "ERROR", "Environment variable {env_name} is not set, but required.")
+    fail status
+  }
+  if val == "" {
+    unsafe lf(md, 1, "ERROR", "Environment variable {env_name} is set, but it is empty.")
+    fail 1
+  }
+  return val
+}
+
+pub fun get_default_env(env_name: Text, default: Text): Text {
+  let val = get_required_env(env_name) failed {
+    let val = default
+  }
+  return val
+}

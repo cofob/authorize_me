@@ -1,0 +1,12 @@
+import { init_log_module_data, l, lf } from "./log.ab"
+
+let md = init_log_module_data("requests")
+
+pub fun request_get(url: Text): Text {
+  l(md, "INFO", "GET to {url}")
+  let answer = silent $curl -m 2 {url}$ failed {
+    unsafe lf(md, status, "ERROR", "GET to {url} failed")
+    fail status
+  }
+  return answer
+}
