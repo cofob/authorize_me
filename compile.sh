@@ -11,4 +11,5 @@ fi
 mkdir dist
 
 # Compile the source code
-amber src/main.ab dist/main.sh
+amber src/client.ab dist/client.sh
+amber src/server.ab dist/server.sh

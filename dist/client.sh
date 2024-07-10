@@ -303,13 +303,17 @@ fi
 function get_default_env__46_v0 {
     local env_name=$1
     local default=$2
-    get_required_env__45_v0 "${env_name}";
+    __AMBER_VAL_13=$(printenv ${env_name});
     __AS=$?;
 if [ $__AS != 0 ]; then
-        local val="${default}"
+        __AF_get_default_env46_v0="${default}";
+        return 0
 fi;
-    __AF_get_required_env45_v0__36="${__AF_get_required_env45_v0}";
-    local val="${__AF_get_required_env45_v0__36}"
+    local val="${__AMBER_VAL_13}"
+    if [ $([ "_${val}" != "_" ]; echo $?) != 0 ]; then
+        __AF_get_default_env46_v0="${default}";
+        return 0
+fi
     __AF_get_default_env46_v0="${val}";
     return 0
 }
@@ -321,7 +325,7 @@ function request_get__54_v0 {
     l__34_v0 __6_md[@] "INFO" "GET to ${url}";
     __AF_l34_v0__6=$__AF_l34_v0;
     echo $__AF_l34_v0__6 > /dev/null 2>&1
-    __AMBER_VAL_13=$(curl -m 2 ${url} 2>/dev/null);
+    __AMBER_VAL_14=$(curl -m 2 ${url} 2>/dev/null);
     __AS=$?;
 if [ $__AS != 0 ]; then
                     lf__35_v0 __6_md[@] $__AS "ERROR" "GET to ${url} failed";
@@ -331,11 +335,11 @@ if [ $__AS != 0 ]; then
         __AF_request_get54_v0='';
         return $__AS
 fi;
-    local answer="${__AMBER_VAL_13}"
+    local answer="${__AMBER_VAL_14}"
     __AF_request_get54_v0="${answer}";
     return 0
 }
-init_log_module_data__36_v0 "main";
+init_log_module_data__36_v0 "client";
 __AF_init_log_module_data36_v0__7=("${__AF_init_log_module_data36_v0[@]}");
 __7_md=("${__AF_init_log_module_data36_v0__7[@]}")
 function print_user_keys__60_v0 {

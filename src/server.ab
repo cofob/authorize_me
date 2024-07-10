@@ -1,0 +1,62 @@
+import { len, file_exist, file_read, file_write } from "std"
+
+import { fail_if_commands_not_found, get_default_env, get_required_env, load_env_file } from "./utils.ab"
+import { init_log, init_log_module_data, l, lf } from "./log.ab"
+import { init_http, send_200, send_500, set_json } from "./http.ab"
+
+let md = init_log_module_data("server")
+
+fun process_request() {
+  let hosts_dir = get_default_env("HOSTS_DIR", "/var/authorize_me")
+
+  let request_ip = get_required_env("SOCAT_PEERADDR")?
+  l(md, "DEBUG", "Request from {request_ip}'")
+
+  init_http()
+
+  let path = "{hosts_dir}/{request_ip}.json"
+  if file_exist(path) != true {
+    l(md, "WARN", "Host {request_ip} not found")
+    send_500("Host not found")
+  }
+
+  let content = file_read(path) failed {
+    l(md, "ERROR", "Failed to read host data ({request_ip})")
+    send_500("Failed to read host data")
+  }
+
+  set_json()
+  send_200(content)
+}
+
+main(args) {
+  if file_exist(".env"):
+    load_env_file()
+  init_log()
+
+  let args_len = len(args)
+  if args_len > 1 {
+    unsafe lf(md, 1, "ERROR", "Invalid argument count was passed")
+    fail 1
+  }
+  if args_len == 1 {
+    if args[0] == "process_request" {
+      process_request()?
+      unsafe $exit 0$
+    } else {
+      unsafe lf(md, 1, "ERROR", "Unknown argument was passed")
+      fail 1
+    }
+  }
+
+  fail_if_commands_not_found(["socat", "bc", "sed", "date"])?
+
+  let port = get_default_env("PORT", "8080")
+  let host = get_default_env("HOST", "127.0.0.1")
+
+  l(md, "INFO", "Starting server on {host}:{port}")
+  $socat TCP4-LISTEN:{port},bind={host},pktinfo,fork "EXEC:/usr/bin/env bash \$\{BASH_SOURCE[0]} process_request"$ failed {
+    unsafe lf(md, 1, "ERROR", "Failed to start API server")
+    fail 1
+  }
+}

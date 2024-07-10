@@ -33,8 +33,10 @@ pub fun get_required_env(env_name: Text): Text {
 }
 
 pub fun get_default_env(env_name: Text, default: Text): Text {
-  let val = get_required_env(env_name) failed {
-    let val = default
+  let val = $printenv {env_name}$ failed {
+    return default
   }
+  if val == "":
+    return default
   return val
 }

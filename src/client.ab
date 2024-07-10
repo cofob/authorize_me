@@ -4,7 +4,7 @@ import { fail_if_commands_not_found, get_required_env, get_default_env, load_env
 import { request_get } from "./requests.ab"
 import { init_log, init_log_module_data, l, lf } from "./log.ab"
 
-let md = init_log_module_data("main")
+let md = init_log_module_data("client")
 
 fun print_user_keys(json: Text, username: Text): Null {
   unsafe $echo {json} | jq -r \".{username}.[]\" | xargs -I \{} echo \{}$

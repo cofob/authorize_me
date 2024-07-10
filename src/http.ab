@@ -1,0 +1,49 @@
+import { lines } from "std"
+
+pub fun send(text: Text): Null {
+  unsafe $printf "{text}\r\n"$
+}
+
+let response_headers = ["Server: Bash Server"]
+
+pub fun append_header(header_name: Text, header_value: Text): Null {
+  response_headers += ["{header_name}: {header_value}"]
+}
+
+pub fun set_json(): Null {
+  append_header("Content-Type", "application/json")
+}
+
+pub fun init_response_headers(): Null {
+  let date = unsafe $date +"%a, %d %b %Y %H:%M:%S %Z"$
+  append_header("Date", date)
+  append_header("Expires", date)
+}
+
+pub fun init_http(): Null {
+  init_response_headers()
+}
+
+pub fun send_response(response_code: Num, response_code_name: Text, body: Text): Null {
+  send("HTTP/1.0 {response_code} {response_code_name}")
+  loop index, header in response_headers {
+    send(header)
+  }
+  send("")
+  loop index, line in lines(body) {
+    send(line)
+  }
+  unsafe $exit 0$
+}
+
+pub fun send_200(body: Text): Null {
+  send_response(200, "OK", body)
+}
+
+pub fun send_400(body: Text): Null {
+  send_response(400, "Bad Request", body)
+}
+
+pub fun send_500(body: Text): Null {
+  send_response(500, "Internal Server Error", body)
+}
